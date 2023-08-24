@@ -16,3 +16,13 @@ sp-core = "12.0.0"
 sp-runtime = "14.0.0"
 clap = { version = "4.1.1", features = ["derive"] }
 tiny-bip39 = "1.0.0"
+# arkworks dependencies
+ark-std = { version = "0.4.0", default-features = false }
+ark-ff = { version = "0.4.0", default-features = false }
+ark-poly = { version = "0.4.0", default-features = false }
+ark-ec = { version = "0.4.0", default-features = false }
+ark-serialize = { version = "0.4.0", default-features = false }
+ark-bls12-381 = { version = "0.4.0", features = ["curve"], default-features = false }
+ark-crypto-primitives = { version = "0.4.0", default-features = false, features = ["signature"] }
+crypto = { path = "../etf-sdk/crypto" }
+etf-api = { path = "../etf-sdk/api" }
