@@ -15,9 +15,9 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
-    /// Encrypt a message using a set of slot ids and a threshold
+    /// Encrypt a message using a set of slot ids and a threshold. A file name should be provided to save the encryption ouput.
     Encrypt(EncryptionDetails),
-    /// Decrypt a cipher text
+    /// Decrypt a ciphertext using the .etf file where the ciphertext all encryption details were saved>
     Decrypt(DecryptionDetails),
 }
 
@@ -63,15 +63,16 @@ async fn main() {
                     let secrets = etf::etf_api::calculate_secret_keys(ids);
                     println!("Encryption secrets: {:?}", secrets);
                     println!("Writing details to file...");
-                    let mut file = match File::create(&args.file_name) {
+                    let etf_file = format!("{}{}", &args.file_name, String::from(".etf"));
+                    let mut file = match File::create(&etf_file) {
                         Ok(file) => file,
-                        Err(e) => panic!("couldn't create {}: {}", &args.file_name, e),
+                        Err(e) => panic!("couldn't create {}: {}", &etf_file, e),
                     };
                     let encryption_details =
                         etf::etf_api::convert_to_encryption_result(ct, secrets);
                     file.write_all(&encryption_details.encode()[..])
                         .expect("write encryption details failed");
-                    println!("File created: {}", &args.file_name);
+                    println!("File created: {}", &etf_file);
                 }
                 Err(e) => {
                     println!("Encryption failed: {:?}", e);
