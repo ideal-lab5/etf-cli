@@ -1,17 +1,37 @@
 pub mod etf_api {
     use ark_bls12_381::{Fr, G1Affine as G1, G2Affine as G2};
     use ark_ec::AffineRepr;
-    use ark_serialize::CanonicalDeserialize;
     use ark_std::{ops::Mul, test_rng, UniformRand};
     use crypto::{
         client::client::*,
         ibe::fullident::BfIbe,
-        proofs::verifier::IbeDleqVerifier,
         utils::{convert_to_bytes, hash_to_g1},
     };
-    use serde::{Deserialize, Serialize};
+    use parity_scale_codec::{Decode, Encode};
 
-    // calculate secret keys: Q = H1(id), d = sQ
+    #[derive(Debug, Encode, Decode, PartialEq, Eq, Clone)]
+    /// Representation of an encryption result
+    pub struct EncryptionResult {
+        pub ciphertext: Vec<u8>,
+        pub nonce: Vec<u8>,
+        pub etf_ct: Vec<Vec<u8>>,
+        pub secrets: Vec<Vec<u8>>,
+    }
+
+    /// Helper function to convert from AesIbeCt to EncryptionResult
+    pub fn convert_to_encryption_result(
+        encryption_info: AesIbeCt,
+        secrets: Vec<Vec<u8>>,
+    ) -> EncryptionResult {
+        EncryptionResult {
+            ciphertext: encryption_info.aes_ct.ciphertext,
+            nonce: encryption_info.aes_ct.nonce,
+            etf_ct: encryption_info.etf_ct,
+            secrets,
+        }
+    }
+
+    /// calculates secret keys: Q = H1(id), d = sQ
     pub fn calculate_secret_keys(ids: Vec<Vec<u8>>) -> Vec<Vec<u8>> {
         let s = Fr::rand(&mut test_rng());
         ids.iter()
@@ -23,6 +43,7 @@ pub mod etf_api {
             .collect::<Vec<_>>()
     }
 
+    /// encrypt wrapper
     pub fn encrypt(message: &[u8], ids: Vec<Vec<u8>>, t: u8) -> Result<AesIbeCt, ClientError> {
         let s = Fr::rand(&mut test_rng());
         let ibe_pp: G2 = G2::generator();
@@ -39,6 +60,7 @@ pub mod etf_api {
         )
     }
 
+    /// decrypt wrapper
     pub fn decrypt(
         ciphertext: Vec<u8>,
         nonce: Vec<u8>,
@@ -57,6 +79,7 @@ pub mod etf_api {
 }
 
 #[test]
+/// Tests to ensure that encrypt and decrypt functions are working properly
 fn can_encrypt_and_decrypt() {
     let message = b"this is a test";
     let ids = vec![b"id1".to_vec(), b"id2".to_vec(), b"id3".to_vec()];

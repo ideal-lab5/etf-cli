@@ -1,5 +1,9 @@
 mod etf;
 use clap::{Args, Parser, Subcommand};
+use parity_scale_codec::{Decode, Encode};
+use sp_core::hexdisplay::AsBytesRef;
+use std::fs::File;
+use std::io::prelude::*;
 /// Command line
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
@@ -18,12 +22,6 @@ enum Commands {
 }
 
 #[derive(Args)]
-struct DecryptionDetails {
-    /// cipher text to be decripted
-    ciphertext: String,
-}
-
-#[derive(Args)]
 struct EncryptionDetails {
     /// Message to encrypt
     message: String,
@@ -31,6 +29,14 @@ struct EncryptionDetails {
     ids: String,
     /// Threshold
     t: u8,
+    /// File name to output the encryption details
+    file_name: String,
+}
+
+#[derive(Args)]
+struct DecryptionDetails {
+    /// file path with the encryption details
+    file_name: String,
 }
 
 #[tokio::main]
@@ -51,11 +57,21 @@ async fn main() {
             match etf::etf_api::encrypt(message, ids.clone(), args.t) {
                 Ok(ct) => {
                     println!("Encryption worked!");
-                    print!("Encryption ciphertext: {:?}", ct.aes_ct.ciphertext);
-                    print!("Encryption nonce: {:?}", ct.aes_ct.nonce);
-                    print!("Encryption capsule: {:?}", ct.etf_ct);
+                    println!("Encryption ciphertext: {:?}", ct.aes_ct.ciphertext.encode());
+                    println!("Encryption nonce: {:?}", ct.aes_ct.nonce.encode());
+                    println!("Encryption capsule: {:?}", ct.etf_ct.encode());
                     let secrets = etf::etf_api::calculate_secret_keys(ids);
-                    print!("Encryption secrets: {:?}", secrets);
+                    println!("Encryption secrets: {:?}", secrets);
+                    println!("Writing details to file...");
+                    let mut file = match File::create(&args.file_name) {
+                        Ok(file) => file,
+                        Err(e) => panic!("couldn't create {}: {}", &args.file_name, e),
+                    };
+                    let encryption_details =
+                        etf::etf_api::convert_to_encryption_result(ct, secrets);
+                    file.write_all(&encryption_details.encode()[..])
+                        .expect("write encryption details failed");
+                    println!("File created: {}", &args.file_name);
                 }
                 Err(e) => {
                     println!("Encryption failed: {:?}", e);
@@ -63,7 +79,22 @@ async fn main() {
             }
         }
         Commands::Decrypt(args) => {
-            print!("Decrypting... { }", args.ciphertext);
+            let mut file = match File::open(&args.file_name) {
+                Ok(file) => file,
+                Err(e) => panic!("couldn't open {}: {}", args.file_name, e),
+            };
+
+            let mut buf = Vec::new();
+            file.read_to_end(&mut buf)
+                .expect("read encryption details failed");
+            let encryption_details =
+                etf::etf_api::EncryptionResult::decode(&mut buf.as_bytes_ref())
+                    .expect("decode failed");
+            println!("Encryption details: ");
+            println!("ciphertext... {:?}", encryption_details.ciphertext);
+            println!("nonce... {:?}", encryption_details.nonce);
+            println!("capsule... {:?}", encryption_details.etf_ct);
+            println!("secrets... {:?}", encryption_details.secrets);
             //TODO calls decrypt and check its result
         }
         _ => {}
