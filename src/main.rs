@@ -91,13 +91,23 @@ async fn main() {
             let encryption_details =
                 etf::etf_api::EncryptionResult::decode(&mut buf.as_bytes_ref())
                     .expect("decode failed");
-            println!("Encryption details: ");
-            println!("ciphertext... {:?}", encryption_details.ciphertext);
-            println!("nonce... {:?}", encryption_details.nonce);
-            println!("capsule... {:?}", encryption_details.etf_ct);
-            println!("secrets... {:?}", encryption_details.secrets);
-            //TODO calls decrypt and check its result
+            println!("Attempting to decrypt: {:?}", encryption_details.ciphertext);
+            match etf::etf_api::decrypt(
+                encryption_details.ciphertext,
+                encryption_details.nonce,
+                encryption_details.etf_ct,
+                encryption_details.secrets,
+            ) {
+                Ok(m) => {
+                    println!(
+                        "Result: {}",
+                        String::from_utf8(m).expect("Error getting the string representation...")
+                    );
+                }
+                Err(e) => {
+                    panic!("Decryption should work but was: {:?}", e);
+                }
+            }
         }
-        _ => {}
     }
 }
