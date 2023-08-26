@@ -1,5 +1,5 @@
 # etf-cli
-Command line tool (CLI) to ilustrate etf-sdk in action. This version includes encrypt and decrypt capabilities only. Future work includes the ability to interact with the EtF Network and more advanced features. EtF SDK is required: https://github.com/ideal-lab5/etf-sdk.git
+Command line tool (CLI) to ilustrate etf-sdk in action. This version includes encrypt and decrypt capabilities only. Future work will include the ability to interact with the EtF Network and more advanced features. EtF SDK is required: https://github.com/ideal-lab5/etf-sdk.git
 
 ### Build
 cargo build
